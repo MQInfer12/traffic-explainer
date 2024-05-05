@@ -1,14 +1,20 @@
-import { useState } from "react";
+import Layout from "./components/layout";
+import Table from "./pages/table";
+import Map from "./pages/map";
+import { useRouteContext } from "./contexts/route";
 
 function App() {
-  const [counter, setCounter] = useState(0);
+  const { route } = useRouteContext();
 
   return (
-    <main>
-      <button onClick={() => setCounter((old) => old + 1)}>
-        Contar: {counter}
-      </button>
-    </main>
+    <Layout>
+      {
+        {
+          table: <Table />,
+          map: <Map />,
+        }[route]
+      }
+    </Layout>
   );
 }
 

@@ -2,10 +2,13 @@
   "manifest_version": 3,
   "version": "1.0.0",
   "name": "Traffic Explainer",
+  "permissions": ["scripting", "tabs"],
+  "host_permissions": ["http://*/*", "https://*/*"],
   "action": {
-    "default_popup": "index.html"
+    "default_icon": {}
   },
-  "permissions": ["scripting"],
-  "host_permission": ["http://*/*", "https://*/*"],
-  "icons": {}
+  "background": {
+    "service_worker": "service_worker.js",
+    "type": "module"
+  }
 }
