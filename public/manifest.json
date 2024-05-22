@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "version": "1.0.0",
   "name": "Traffic Explainer",
-  "permissions": ["scripting", "tabs"],
+  "permissions": ["scripting", "tabs", "webRequest"],
   "host_permissions": ["http://*/*", "https://*/*"],
   "action": {
     "default_icon": {}

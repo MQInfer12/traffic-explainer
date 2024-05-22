@@ -8,3 +8,14 @@
   box-sizing: border-box;
   font-family: "Quicksand";
 }
+
+::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-gray-100;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-amber-700 rounded-full;
+}
