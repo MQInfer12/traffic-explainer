@@ -1,10 +1,11 @@
 import { createContext, useContext, useState } from "react";
+import { SetState } from "../interfaces/setState";
 
 export type Route = "table" | "map";
 
 interface Context {
   route: Route;
-  setRoute: React.Dispatch<React.SetStateAction<Route>>;
+  setRoute: SetState<Route>;
 }
 
 export const RouteContext = createContext<Context | null>(null);

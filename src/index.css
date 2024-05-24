@@ -9,6 +9,11 @@
   font-family: "Quicksand";
 }
 
+svg {
+  height: 100%;
+  width: 100%;
+}
+
 ::-webkit-scrollbar {
   height: 8px;
   width: 8px;

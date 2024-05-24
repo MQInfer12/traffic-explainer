@@ -23,3 +23,5 @@ dist.pem
 *.njsproj
 *.sln
 *.sw?
+
+.env
