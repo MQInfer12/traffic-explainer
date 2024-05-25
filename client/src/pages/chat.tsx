@@ -4,7 +4,7 @@ import Button from "../components/button";
 import ButtonIcon from "../components/buttonIcon";
 import { SetState } from "../interfaces/setState";
 import { twClass } from "../utils/twClass";
-import { AIResponse } from "../utils/AIResponse";
+import { api_getAIResponse } from "../services/AIResponse";
 
 interface Props {
   chat: IChat[];
@@ -42,7 +42,7 @@ const Chat = ({
 
   useEffect(() => {
     const getResponse = async () => {
-      await AIResponse(chat, (res) => {
+      await api_getAIResponse(chat, (res) => {
         setChat((old) => {
           const lastIndex = old.length - 1;
           const lastMessage = old[lastIndex];

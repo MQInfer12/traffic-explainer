@@ -101,7 +101,7 @@ const Table = ({ requests, newMessage }: Props) => {
   );
 
   const tdClasses =
-    "p-2 px-2 border border-gray-300 transition-all duration-75";
+    "p-2 px-2 border-b border-gray-300 transition-all duration-75";
   const hoverClasses = "cursor-pointer hover:invert-[12%] hover:bg-[#FEFEFE]";
   const activeClasses = "invert-[12%] bg-[#FEFEFE]";
   const twTd = twClass(tdClasses, hoverClasses);
@@ -128,39 +128,39 @@ const Table = ({ requests, newMessage }: Props) => {
   return (
     <div className="h-full w-full p-6">
       {options}
-      <div className="w-full h-full border-2 overflow-auto border-gray-300">
+      <div className="w-full h-full border-2 overflow-auto border-gray-300 rounded-lg">
         <table className="w-full table-fixed">
           <thead className="sticky top-0">
             <tr>
-              <th className="p-2 bg-gray-200 border border-gray-300 w-10">
+              <th className="p-2 bg-gray-200 border-b border-gray-300 w-10">
                 <p className="text-sm text-black/80">#</p>
               </th>
-              <th className="p-2 bg-gray-200 border border-gray-300 w-56">
+              <th className="p-2 bg-gray-200 border-b border-gray-300 w-56">
                 <p className="text-sm text-black/80">Origen</p>
               </th>
-              <th className="p-2 bg-gray-200 border border-gray-300 w-96">
+              <th className="p-2 bg-gray-200 border-b border-gray-300 w-96">
                 <p className="text-sm text-black/80">URL</p>
               </th>
-              <th className="p-2 bg-gray-200 border border-gray-300 w-16">
+              <th className="p-2 bg-gray-200 border-b border-gray-300 w-16">
                 <p className="text-sm text-black/80">Estado</p>
               </th>
-              <th className="p-2 bg-gray-200 border border-gray-300 w-40">
+              <th className="p-2 bg-gray-200 border-b border-gray-300 w-40">
                 <p className="text-sm text-black/80">Tipo</p>
               </th>
-              <th className="p-2 bg-gray-200 border border-gray-300 w-20">
+              <th className="p-2 bg-gray-200 border-b border-gray-300 w-20">
                 <p className="text-sm text-black/80">Método</p>
               </th>
-              <th className="p-2 bg-gray-200 border border-gray-300 w-40">
+              <th className="p-2 bg-gray-200 border-b border-gray-300 w-40">
                 <p className="text-sm text-black/80">Fecha</p>
               </th>
-              <th className="p-2 bg-gray-200 border border-gray-300 w-20">
+              <th className="p-2 bg-gray-200 border-b border-gray-300 w-20">
                 <p className="text-sm text-black/80">Controles</p>
               </th>
             </tr>
           </thead>
           <tbody>
             {requests.map((v, i) => (
-              <tr key={v.id}>
+              <tr className="even:bg-gray-100" key={v.id}>
                 <td className={tdClasses}>
                   <p className="text-[12px] font-medium text-black/80 text-center">
                     {i + 1}
