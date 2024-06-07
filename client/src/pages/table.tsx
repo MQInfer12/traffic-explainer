@@ -1,14 +1,15 @@
 import { useCallback, useMemo, useState } from "react";
 import Button from "../components/button";
-import { WebRequest } from "../interfaces/webRequest";
+import { SuspiciousRequestJSON, WebRequest } from "../interfaces/webRequest";
 import { formatDate } from "../utils/formatDate";
 import { twClass } from "../utils/twClass";
-import { useOptions } from "../hooks/useOptions";
+import { Option, useOptions } from "../hooks/useOptions";
 import { toastError, toastSuccess } from "../utils/toasts";
 
 interface Props {
   requests: WebRequest[];
   newMessage: (msg: string) => void;
+  suspiciousRequests: SuspiciousRequestJSON;
 }
 
 interface Data {
@@ -21,67 +22,85 @@ interface Data {
 type Active = {
   td: HTMLElement;
   data: Data;
+  suspicious: boolean;
 } | null;
 
-const Table = ({ requests, newMessage }: Props) => {
+const Table = ({ requests, newMessage, suspiciousRequests }: Props) => {
   const [active, setActive] = useState<Active>(null);
   const [compareWith, setCompareWith] = useState<Active>(null);
 
   const activeTd = active?.td;
 
-  const { options, setOpen, setReference } = useOptions(
-    compareWith?.td.id === activeTd?.id
-      ? [
-          {
-            title: "Dejar de comparar",
-            onClick: () => {
-              setCompareWith(null);
-            },
+  const getOptions = useCallback((): Option[] => {
+    if (compareWith?.td.id === activeTd?.id) {
+      return [
+        {
+          title: "Dejar de comparar",
+          onClick: () => {
+            setCompareWith(null);
           },
-        ]
-      : [
-          {
-            title: "Copiar",
-            onClick: async () => {
-              try {
-                await navigator.clipboard.writeText(active?.data.label || "");
-                toastSuccess("Copiado exitosamente");
-              } catch (err) {
-                toastError("Error al copiar");
-              }
-            },
-          },
-          {
-            title: "¿Qué es esto?",
-            onClick: () => {
-              newMessage(
-                `¿Qué significa que ${active?.data.type} de la petición HTTP sea ${active?.data.label}?`
-              );
-            },
-          },
-          {
-            title: "Comparar",
-            onClick: () => {
-              setCompareWith(active);
-            },
-          },
-          {
-            title: "Explicar fila entera",
-            onClick: () => {
-              if (!active) return;
-              const {
-                row: { initiator, url, statusCode, type, method },
-              } = active.data;
-              newMessage(
-                `¿Puedes explicarme qué significa esta petición completa?\n\nOrigen: ${initiator}\nURL: ${url}\nEstado: ${statusCode}\nTipo de recurso: ${type}\nMétodo: ${method}`
-              );
-            },
-          },
-        ],
-    () => {
-      setActive(null);
+        },
+      ];
     }
-  );
+    const options = [
+      {
+        title: "Copiar",
+        onClick: async () => {
+          try {
+            await navigator.clipboard.writeText(active?.data.label || "");
+            toastSuccess("Copiado exitosamente");
+          } catch (err) {
+            toastError("Error al copiar");
+          }
+        },
+      },
+      {
+        title: "¿Qué es esto?",
+        onClick: () => {
+          newMessage(
+            `¿Qué significa que ${active?.data.type} de la petición HTTP sea ${active?.data.label}?`
+          );
+        },
+      },
+      {
+        title: "Comparar",
+        onClick: () => {
+          setCompareWith(active);
+        },
+      },
+      {
+        title: "Explicar fila entera",
+        onClick: () => {
+          if (!active) return;
+          const {
+            row: { initiator, url, statusCode, type, method },
+          } = active.data;
+          newMessage(
+            `¿Puedes explicarme qué significa esta petición completa?\n\nOrigen: ${initiator}\nURL: ${url}\nEstado: ${statusCode}\nTipo de recurso: ${type}\nMétodo: ${method}`
+          );
+        },
+      },
+    ];
+    if (active?.suspicious) {
+      options.push({
+        title: "¿Por qué es sospechoso?",
+        onClick: () => {
+          if (!active) return;
+          const {
+            row: { id, initiator, url, statusCode, type, method },
+          } = active.data;
+          newMessage(
+            `¿Puedes explicarme por qué la petición ${id} es sospechosa?\n\nOrigen: ${initiator}\nURL: ${url}\nEstado: ${statusCode}\nTipo de recurso: ${type}\nMétodo: ${method}`
+          );
+        },
+      });
+    }
+    return options;
+  }, [active, compareWith, activeTd]);
+
+  const { options, setOpen, setReference } = useOptions(getOptions(), () => {
+    setActive(null);
+  });
 
   const methods = useMemo<{
     [key: string]: string;
@@ -107,10 +126,15 @@ const Table = ({ requests, newMessage }: Props) => {
   const twTd = twClass(tdClasses, hoverClasses);
 
   const handleTdClick = useCallback(
-    (event: React.MouseEvent<HTMLElement, MouseEvent>, data: Data) => {
+    (
+      event: React.MouseEvent<HTMLElement, MouseEvent>,
+      data: Data,
+      isSuspicious: boolean
+    ) => {
       setActive({
         td: event.currentTarget,
         data,
+        suspicious: isSuspicious,
       });
       setReference(event.currentTarget);
       setOpen(true);
@@ -134,6 +158,9 @@ const Table = ({ requests, newMessage }: Props) => {
             <tr>
               <th className="p-2 bg-gray-200 border-b border-gray-300 w-10">
                 <p className="text-sm text-black/80">#</p>
+              </th>
+              <th className="p-2 bg-gray-200 border-b border-gray-300 w-10">
+                <p className="text-sm text-black/80">Id</p>
               </th>
               <th className="p-2 bg-gray-200 border-b border-gray-300 w-56">
                 <p className="text-sm text-black/80">Origen</p>
@@ -159,177 +186,194 @@ const Table = ({ requests, newMessage }: Props) => {
             </tr>
           </thead>
           <tbody>
-            {requests.map((v, i) => (
-              <tr className="even:bg-gray-100" key={v.id}>
-                <td className={tdClasses}>
-                  <p className="text-[12px] font-medium text-black/80 text-center">
-                    {i + 1}
-                  </p>
-                </td>
-                <td
-                  id={`id_${v.id}_1`}
+            {requests.map((v, i) => {
+              const isSuspicious = Object.keys(suspiciousRequests).includes(
+                v.id
+              );
+              return (
+                <tr
+                  key={v.id}
                   className={twClass(
-                    twTd,
-                    activeTd?.id === `id_${v.id}_1` && activeClasses,
-                    compareWith?.td.id === `id_${v.id}_1` && "bg-amber-900/20"
+                    isSuspicious ? "bg-red-100" : "even:bg-gray-100"
                   )}
-                  title={v.initiator}
-                  onClick={(e) => {
-                    const data: Data = {
-                      id: `id_${v.id}_1`,
-                      row: v,
-                      type: "el origen",
-                      label: v.initiator || "vacío",
-                    };
-                    if (compareWith && compareWith.td.id !== data.id) {
-                      handleCompare(data);
-                      return;
-                    }
-                    handleTdClick(e, data);
-                  }}
                 >
-                  <p className="text-sm font-medium text-black/80 whitespace-nowrap text-ellipsis overflow-hidden">
-                    {v.initiator}
-                  </p>
-                </td>
-                <td
-                  id={`id_${v.id}_2`}
-                  className={twClass(
-                    twTd,
-                    activeTd?.id === `id_${v.id}_2` && activeClasses,
-                    compareWith?.td.id === `id_${v.id}_2` && "bg-amber-900/20"
-                  )}
-                  title={v.url}
-                  onClick={(e) => {
-                    const data: Data = {
-                      id: `id_${v.id}_2`,
-                      row: v,
-                      type: "la URL",
-                      label: v.url,
-                    };
-                    if (compareWith && compareWith.td.id !== data.id) {
-                      handleCompare(data);
-                      return;
-                    }
-                    handleTdClick(e, data);
-                  }}
-                >
-                  <p className="text-sm font-medium text-black/80 whitespace-nowrap text-ellipsis overflow-hidden">
-                    {v.url}
-                  </p>
-                </td>
-                <td
-                  id={`id_${v.id}_3`}
-                  className={twClass(
-                    twTd,
-                    activeTd?.id === `id_${v.id}_3` && activeClasses,
-                    compareWith?.td.id === `id_${v.id}_3` && "bg-amber-900/20"
-                  )}
-                  onClick={(e) => {
-                    const data: Data = {
-                      id: `id_${v.id}_3`,
-                      row: v,
-                      type: "el estado",
-                      label: String(v.statusCode),
-                    };
-                    if (compareWith && compareWith.td.id !== data.id) {
-                      handleCompare(data);
-                      return;
-                    }
-                    handleTdClick(e, data);
-                  }}
-                >
-                  <p className="text-sm font-medium text-black/80">
-                    {v.statusCode}
-                  </p>
-                </td>
-                <td
-                  id={`id_${v.id}_4`}
-                  className={twClass(
-                    twTd,
-                    activeTd?.id === `id_${v.id}_4` && activeClasses,
-                    compareWith?.td.id === `id_${v.id}_4` && "bg-amber-900/20"
-                  )}
-                  onClick={(e) => {
-                    const data: Data = {
-                      id: `id_${v.id}_4`,
-                      row: v,
-                      type: "el tipo de recurso",
-                      label: v.type,
-                    };
-                    if (compareWith && compareWith.td.id !== data.id) {
-                      handleCompare(data);
-                      return;
-                    }
-                    handleTdClick(e, data);
-                  }}
-                >
-                  <p className="text-sm font-medium text-black/80">{v.type}</p>
-                </td>
-                <td
-                  id={`id_${v.id}_5`}
-                  className={twClass(
-                    twTd,
-                    activeTd?.id === `id_${v.id}_5` && activeClasses,
-                    compareWith?.td.id === `id_${v.id}_5` && "bg-amber-900/20"
-                  )}
-                  onClick={(e) => {
-                    const data: Data = {
-                      id: `id_${v.id}_5`,
-                      row: v,
-                      type: "el método",
-                      label: v.method,
-                    };
-                    if (compareWith && compareWith.td.id !== data.id) {
-                      handleCompare(data);
-                      return;
-                    }
-                    handleTdClick(e, data);
-                  }}
-                >
-                  <div className="flex justify-center">
-                    <p
-                      className={twClass(
-                        "text-[12px] font-bold text-black/60 text-center rounded-full px-3",
-                        methods[v.method] || "bg-stone-400"
-                      )}
-                    >
-                      {v.method}
+                  <td className={tdClasses}>
+                    <p className="text-[12px] font-medium text-black/80 text-center">
+                      {i + 1}
                     </p>
-                  </div>
-                </td>
-                <td
-                  id={`id_${v.id}_6`}
-                  className={twClass(
-                    twTd,
-                    activeTd?.id === `id_${v.id}_6` && activeClasses,
-                    compareWith?.td.id === `id_${v.id}_6` && "bg-amber-900/20"
-                  )}
-                  onClick={(e) => {
-                    const data: Data = {
-                      id: `id_${v.id}_6`,
-                      row: v,
-                      type: "el tiempo de envio",
-                      label: formatDate(v.timeStamp),
-                    };
-                    if (compareWith && compareWith.td.id !== data.id) {
-                      handleCompare(data);
-                      return;
-                    }
-                    handleTdClick(e, data);
-                  }}
-                >
-                  <p className="text-sm font-medium text-black/80 whitespace-nowrap">
-                    {formatDate(v.timeStamp)}
-                  </p>
-                </td>
-                <td className={tdClasses}>
-                  <div className="flex justify-center">
-                    <Button>Mapa</Button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td className={tdClasses}>
+                    <p className="text-[12px] font-medium text-black/80 text-center">
+                      {v.id}
+                    </p>
+                  </td>
+                  <td
+                    id={`id_${v.id}_1`}
+                    className={twClass(
+                      twTd,
+                      activeTd?.id === `id_${v.id}_1` && activeClasses,
+                      compareWith?.td.id === `id_${v.id}_1` && "bg-amber-900/20"
+                    )}
+                    title={v.initiator}
+                    onClick={(e) => {
+                      const data: Data = {
+                        id: `id_${v.id}_1`,
+                        row: v,
+                        type: "el origen",
+                        label: v.initiator || "vacío",
+                      };
+                      if (compareWith && compareWith.td.id !== data.id) {
+                        handleCompare(data);
+                        return;
+                      }
+                      handleTdClick(e, data, isSuspicious);
+                    }}
+                  >
+                    <p className="text-sm font-medium text-black/80 whitespace-nowrap text-ellipsis overflow-hidden">
+                      {v.initiator}
+                    </p>
+                  </td>
+                  <td
+                    id={`id_${v.id}_2`}
+                    className={twClass(
+                      twTd,
+                      activeTd?.id === `id_${v.id}_2` && activeClasses,
+                      compareWith?.td.id === `id_${v.id}_2` && "bg-amber-900/20"
+                    )}
+                    title={v.url}
+                    onClick={(e) => {
+                      const data: Data = {
+                        id: `id_${v.id}_2`,
+                        row: v,
+                        type: "la URL",
+                        label: v.url,
+                      };
+                      if (compareWith && compareWith.td.id !== data.id) {
+                        handleCompare(data);
+                        return;
+                      }
+                      handleTdClick(e, data, isSuspicious);
+                    }}
+                  >
+                    <p className="text-sm font-medium text-black/80 whitespace-nowrap text-ellipsis overflow-hidden">
+                      {v.url}
+                    </p>
+                  </td>
+                  <td
+                    id={`id_${v.id}_3`}
+                    className={twClass(
+                      twTd,
+                      activeTd?.id === `id_${v.id}_3` && activeClasses,
+                      compareWith?.td.id === `id_${v.id}_3` && "bg-amber-900/20"
+                    )}
+                    onClick={(e) => {
+                      const data: Data = {
+                        id: `id_${v.id}_3`,
+                        row: v,
+                        type: "el estado",
+                        label: String(v.statusCode),
+                      };
+                      if (compareWith && compareWith.td.id !== data.id) {
+                        handleCompare(data);
+                        return;
+                      }
+                      handleTdClick(e, data, isSuspicious);
+                    }}
+                  >
+                    <p className="text-sm font-medium text-black/80">
+                      {v.statusCode}
+                    </p>
+                  </td>
+                  <td
+                    id={`id_${v.id}_4`}
+                    className={twClass(
+                      twTd,
+                      activeTd?.id === `id_${v.id}_4` && activeClasses,
+                      compareWith?.td.id === `id_${v.id}_4` && "bg-amber-900/20"
+                    )}
+                    onClick={(e) => {
+                      const data: Data = {
+                        id: `id_${v.id}_4`,
+                        row: v,
+                        type: "el tipo de recurso",
+                        label: v.type,
+                      };
+                      if (compareWith && compareWith.td.id !== data.id) {
+                        handleCompare(data);
+                        return;
+                      }
+                      handleTdClick(e, data, isSuspicious);
+                    }}
+                  >
+                    <p className="text-sm font-medium text-black/80">
+                      {v.type}
+                    </p>
+                  </td>
+                  <td
+                    id={`id_${v.id}_5`}
+                    className={twClass(
+                      twTd,
+                      activeTd?.id === `id_${v.id}_5` && activeClasses,
+                      compareWith?.td.id === `id_${v.id}_5` && "bg-amber-900/20"
+                    )}
+                    onClick={(e) => {
+                      const data: Data = {
+                        id: `id_${v.id}_5`,
+                        row: v,
+                        type: "el método",
+                        label: v.method,
+                      };
+                      if (compareWith && compareWith.td.id !== data.id) {
+                        handleCompare(data);
+                        return;
+                      }
+                      handleTdClick(e, data, isSuspicious);
+                    }}
+                  >
+                    <div className="flex justify-center">
+                      <p
+                        className={twClass(
+                          "text-[12px] font-bold text-black/60 text-center rounded-full px-3",
+                          methods[v.method] || "bg-stone-400"
+                        )}
+                      >
+                        {v.method}
+                      </p>
+                    </div>
+                  </td>
+                  <td
+                    id={`id_${v.id}_6`}
+                    className={twClass(
+                      twTd,
+                      activeTd?.id === `id_${v.id}_6` && activeClasses,
+                      compareWith?.td.id === `id_${v.id}_6` && "bg-amber-900/20"
+                    )}
+                    onClick={(e) => {
+                      const data: Data = {
+                        id: `id_${v.id}_6`,
+                        row: v,
+                        type: "el tiempo de envio",
+                        label: formatDate(v.timeStamp),
+                      };
+                      if (compareWith && compareWith.td.id !== data.id) {
+                        handleCompare(data);
+                        return;
+                      }
+                      handleTdClick(e, data, isSuspicious);
+                    }}
+                  >
+                    <p className="text-sm font-medium text-black/80 whitespace-nowrap">
+                      {formatDate(v.timeStamp)}
+                    </p>
+                  </td>
+                  <td className={tdClasses}>
+                    <div className="flex justify-center">
+                      <Button>Mapa</Button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

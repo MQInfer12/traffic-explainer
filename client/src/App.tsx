@@ -3,7 +3,7 @@ import Table from "./pages/table";
 import Map from "./pages/map";
 import { useRouteContext } from "./contexts/route";
 import { useEffect, useRef, useState } from "react";
-import { WebRequest } from "./interfaces/webRequest";
+import { SuspiciousRequestJSON, WebRequest } from "./interfaces/webRequest";
 import Data from "./mocks/data.json";
 import Chat from "./pages/chat";
 import Overlay from "./components/overlay";
@@ -27,6 +27,8 @@ function App() {
   const [chat, setChat] = useState<IChat[]>([]);
   const [msg, setMsg] = useState("");
   const [loadingChat, setLoadingChat] = useState(false);
+  const [suspiciousRequests, setSuspiciousRequests] =
+    useState<SuspiciousRequestJSON>({});
   const runned = useRef(false);
 
   const newMessage = (msg: string) => {
@@ -60,7 +62,13 @@ function App() {
     <Layout setOpenChat={setOpenChat}>
       {
         {
-          table: <Table newMessage={newMessage} requests={requests} />,
+          table: (
+            <Table
+              suspiciousRequests={suspiciousRequests}
+              newMessage={newMessage}
+              requests={requests}
+            />
+          ),
           map: <Map />,
         }[route]
       }
@@ -81,6 +89,8 @@ function App() {
           loadingChat={loadingChat}
           setLoadingChat={setLoadingChat}
           runned={runned}
+          requests={requests}
+          setSuspiciousRequests={setSuspiciousRequests}
         />
       </Overlay>
       <ToastContainer position="bottom-right" autoClose={2000} />

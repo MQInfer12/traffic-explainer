@@ -1,7 +1,6 @@
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 import ipinfo
-import socket
 
 from secrets import IPINFO_TOKEN
 

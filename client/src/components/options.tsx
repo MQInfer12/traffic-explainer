@@ -32,6 +32,7 @@ const Options = forwardRef<ElementRef<"div">, Props>(
         <div className="flex flex-col">
           {options.map((o) => (
             <button
+              key={o.title}
               onClick={() => {
                 o.onClick();
                 close();

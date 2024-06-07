@@ -7,3 +7,5 @@ export interface WebRequest {
   type: string;
   initiator: string;
 }
+
+export type SuspiciousRequestJSON = Record<string, string>;

@@ -3,8 +3,9 @@ import { IChat } from "../App";
 import Button from "../components/button";
 import ButtonIcon from "../components/buttonIcon";
 import { SetState } from "../interfaces/setState";
-import { twClass } from "../utils/twClass";
 import { api_getAIResponse } from "../services/AIResponse";
+import { SuspiciousRequestJSON, WebRequest } from "../interfaces/webRequest";
+import Message from "../components/message";
 
 interface Props {
   chat: IChat[];
@@ -14,8 +15,10 @@ interface Props {
   newMessage: (msg: string) => void;
   close: () => void;
   loadingChat: boolean;
+  requests: WebRequest[];
   setLoadingChat: SetState<boolean>;
   runned: MutableRefObject<boolean>;
+  setSuspiciousRequests: SetState<SuspiciousRequestJSON>;
 }
 
 const Chat = ({
@@ -28,6 +31,8 @@ const Chat = ({
   loadingChat,
   setLoadingChat,
   runned,
+  requests,
+  setSuspiciousRequests,
 }: Props) => {
   const chatRef = useRef<ElementRef<"div">>(null);
 
@@ -42,7 +47,7 @@ const Chat = ({
 
   useEffect(() => {
     const getResponse = async () => {
-      await api_getAIResponse(chat, (res) => {
+      await api_getAIResponse(chat, requests, (res) => {
         setChat((old) => {
           const lastIndex = old.length - 1;
           const lastMessage = old[lastIndex];
@@ -66,9 +71,40 @@ const Chat = ({
       });
       setLoadingChat(false);
     };
+
+    const tryJSONParse = (str: string) => {
+      try {
+        const parsed = JSON.parse(str);
+        return parsed;
+      } catch (e) {
+        return null;
+      }
+    };
+
+    const isSuspiciousRequestJSON = (
+      json: any
+    ): json is SuspiciousRequestJSON => {
+      return Object.keys(json).every((key) => !isNaN(Number(key)));
+    };
+
+    const checkSuspiciousRequests = () => {
+      if (chat.length === 0) return;
+      const fullRes = chat[chat.length - 1].content;
+      if (fullRes.includes("```json")) {
+        const json = fullRes.split("```json")[1].split("```")[0];
+        const parsed = tryJSONParse(json);
+        if (!parsed) return;
+        if (isSuspiciousRequestJSON(parsed)) {
+          setSuspiciousRequests(parsed);
+        }
+      }
+    };
+
     if (loadingChat && !runned.current) {
       runned.current = true;
       getResponse();
+    } else {
+      checkSuspiciousRequests();
     }
   }, [loadingChat]);
 
@@ -99,24 +135,7 @@ const Chat = ({
           className="w-full flex flex-col gap-2 flex-1 overflow-y-scroll overflow-x-hidden px-2"
         >
           {chat.map((message, i) => (
-            <div
-              key={i}
-              className={twClass(
-                "w-[600px] max-w-full flex",
-                message.me ? "self-end justify-end" : "self-start justify-start"
-              )}
-            >
-              <p
-                className={twClass(
-                  "font-bold text-black/60 p-2 px-4 text-sm rounded-b-lg leading-relaxed w-fit animate-[appear_.3s] whitespace-pre-line",
-                  message.me
-                    ? "bg-amber-900/30 rounded-tl-lg text-end"
-                    : "bg-amber-900/10 rounded-tr-lg text-start"
-                )}
-              >
-                {message.content}
-              </p>
-            </div>
+            <Message key={i} message={message} newMessage={newMessage} />
           ))}
         </div>
         <form className="w-full flex gap-2">
