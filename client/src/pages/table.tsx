@@ -5,11 +5,14 @@ import { formatDate } from "../utils/formatDate";
 import { twClass } from "../utils/twClass";
 import { Option, useOptions } from "../hooks/useOptions";
 import { toastError, toastSuccess } from "../utils/toasts";
+import { SetState } from "../interfaces/setState";
+import { useRouteContext } from "../contexts/route";
 
 interface Props {
   requests: WebRequest[];
   newMessage: (msg: string) => void;
   suspiciousRequests: SuspiciousRequestJSON;
+  setTo: SetState<string | null>;
 }
 
 interface Data {
@@ -25,7 +28,8 @@ type Active = {
   suspicious: boolean;
 } | null;
 
-const Table = ({ requests, newMessage, suspiciousRequests }: Props) => {
+const Table = ({ requests, newMessage, suspiciousRequests, setTo }: Props) => {
+  const { setRoute } = useRouteContext();
   const [active, setActive] = useState<Active>(null);
   const [compareWith, setCompareWith] = useState<Active>(null);
 
@@ -368,7 +372,18 @@ const Table = ({ requests, newMessage, suspiciousRequests }: Props) => {
                   </td>
                   <td className={tdClasses}>
                     <div className="flex justify-center">
-                      <Button>Mapa</Button>
+                      <Button
+                        onClick={() => {
+                          setTo(
+                            v.initiator
+                              .replace("https://", "")
+                              .replace("http://", "")
+                          );
+                          setRoute("map");
+                        }}
+                      >
+                        Mapa
+                      </Button>
                     </div>
                   </td>
                 </tr>

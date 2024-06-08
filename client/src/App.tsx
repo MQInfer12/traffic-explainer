@@ -27,6 +27,7 @@ function App() {
   const [chat, setChat] = useState<IChat[]>([]);
   const [msg, setMsg] = useState("");
   const [loadingChat, setLoadingChat] = useState(false);
+  const [to, setTo] = useState<string | null>(null);
   const [suspiciousRequests, setSuspiciousRequests] =
     useState<SuspiciousRequestJSON>({});
   const runned = useRef(false);
@@ -67,9 +68,10 @@ function App() {
               suspiciousRequests={suspiciousRequests}
               newMessage={newMessage}
               requests={requests}
+              setTo={setTo}
             />
           ),
-          map: <Map />,
+          map: <Map to={to} />,
         }[route]
       }
       <Overlay

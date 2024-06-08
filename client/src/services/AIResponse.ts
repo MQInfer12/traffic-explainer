@@ -26,7 +26,7 @@ export const api_getAIResponse = async (
       " abstente lo más que puedas a ayudar en otro tipo de temas que no sean de tu área..." +
       " Si el usuario en algún momento te pide que le muestres las peticiones de la tabla que sean maliciosas tendrás el contexto de la tabla de peticiones en una cadena de las últimas 100 peticiones separadas por ';' con el siguiente formato:" +
       " `Id,Origen,URL,Estado,Tipo,Método,Fecha;Id,Origen,URL,Estado,Tipo,Método,Fecha;Id,Origen,URL,Estado,Tipo,Método,Fecha;...;` lo que tienes que hacer es analizar el string y devolver un json con el siguiente formato formato (no utilices otro formato que no sea el especificado ni tampoco listes cuales son, solamente el json si quieres con un párrafo introductorio): " +
-      ' `{"el id como key":"motivo de por que es sospechosa la petición",...}` de las peticiones que te parezcan sospechosas por algún motivo de los datos o que tengan origenes con malware según el conocimiento de tu entrenamiento para que pueda ser parseado en el código y remarcado en la tabla, aquí está la cadena: `' +
+      ' `{"el id como key":"motivo de por que es sospechosa la petición",...}` de las peticiones que te parezcan sospechosas por algún motivo de los datos o que tengan origenes con malware según tu base de datos de conocimiento de tu entrenamiento para que pueda ser parseado en el código y remarcado en la tabla, aquí está la cadena: `' +
       lastHundredRequestsContext +
       "`";
     const response = await fetch(apiUrl, {
